@@ -3,590 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Tracker - Scanner Oficial</title>
-
+    <title>School Tracker - Monitoramento Realtime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon_avelino.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script&gt;
+   
     <!-- CLIENTE SDK SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script&gt;
 
     <style>
-        /* =========================================================
-           VISUAL NORMAL
-           ========================================================= */
+    /* ==========================================================================
+       ESTILOS PADRÃO (TELÃO / PC)
+       ========================================================================== */
+    .turmas-summary { margin-bottom: 20px; }
+   
+    /* Turmas em 3 colunas no PC */
+    .turmas-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+   
+    .turma-stat-card {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 15px;
+        border-radius: 10px;
+        border-top: 4px solid #3b82f6;
+        text-align: center;
+    }
+    .turma-stat-card h4 { margin: 0 0 10px 0; color: #94a3b8; }
+    .stat-row { display: flex; justify-content: space-around; font-size: 0.9rem; margin-bottom: 10px; }
+    .progress-bar { height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #22c55e; transition: width 0.5s; }
+   
+    /* Modais e Chamada */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+    .modal-content { background: #1e293b; margin: 5% auto; padding: 20px; border-radius: 15px; width: 85%; max-width: 500px; border: 1px solid #334155; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+    .close-btn { color: #94a3b8; font-size: 28px; cursor: pointer; }
+    .lista-chamada { max-height: 400px; overflow-y: auto; }
+    .aluno-item { display: flex; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid #334155; }
+    .status-presente { color: #22c55e; font-weight: bold; }
+    .status-ausente { color: #64748b; font-style: italic; }
+    .btn-chamada { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; border-radius: 5px; padding: 5px; cursor: pointer; width: 100%; margin-top: 10px; }
+   
+    /* Painel do Gráfico */
+    .analytics-side {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 20px;
+        border-radius: 15px;
+        border: 1px solid #334155;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-height: 450px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
 
-        * {
+    .analytics-side canvas {
+        max-width: 100% !important;
+        max-height: 260px !important;
+        margin-top: 15px;
+    }
+
+    .btn-emergencia {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid #ef4444;
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: #ef4444;
+        font-size: 0.75rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+        text-align: center;
+    }
+   
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* ==========================================================================
+       ADAPTAÇÃO EXCLUSIVA PARA CELULAR
+       ========================================================================== */
+    @media (max-width: 768px) {
+        .turmas-grid {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            gap: 12px !important;
+            padding-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .turma-stat-card {
+            flex: 0 0 82% !important;
             box-sizing: border-box;
         }
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            background: #0f172a;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 20px;
-            transition: background 0.5s ease, color 0.5s ease;
+        .analytics-side {
+            max-height: none !important;
+            height: auto !important;
         }
-
-        .header-scanner {
-            text-align: center;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .header-scanner h2 {
-            transition: all 0.3s ease;
-        }
-
-        .controls {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-            background: #1e293b;
-            padding: 20px;
-            border-radius: 15px;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        label {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        select {
-            padding: 14px;
-            border-radius: 10px;
-            border: 2px solid #334155;
-            background: #0f172a;
-            color: white;
-            font-size: 1rem;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-
-        select:disabled {
-            background-color: #334155 !important;
-            color: #f8fafc !important;
-            opacity: 0.9 !important;
-            cursor: not-allowed !important;
-        }
-
-        #reader {
-            width: 100% !important;
-            max-width: 400px;
-            border-radius: 15px;
-            overflow: hidden;
-            background: #1e293b;
-            border: none !important;
-            position: relative;
-            transition: border 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        #reader video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-        }
-
-        #reader__scan_region {
-            background: transparent !important;
-        }
-
-        #reader__scan_region img {
-            display: none !important;
-        }
-
-        #resultado {
-            margin-top: 15px;
-            padding: 18px;
-            border-radius: 12px;
-            font-weight: bold;
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            transition: all 0.3s ease;
-        }
-
-        .success {
-            background: #059669;
-            border-left: 8px solid #047857;
-        }
-
-        .error {
-            background: #dc2626;
-            border-left: 8px solid #b91c1c;
-        }
-
-        .scanning {
-            background: #334155;
-            border-left: 8px solid #475569;
-        }
-
-        /* =========================================================
-           MODO PLANO DE ABANDONO
-           ========================================================= */
-
-        body.modo-emergencia {
-            background: radial-gradient(circle at top, #7f1d1d 0%, #450a0a 45%, #1a0505 100%) !important;
-            color: #fff !important;
-        }
-
-        body.modo-emergencia .header-scanner {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        body.modo-emergencia .header-scanner::before {
-            content: "🚨 PLANO DE ABANDONO ATIVO 🚨";
-            display: block;
-            background: #dc2626;
-            color: #fff;
-            padding: 12px 10px;
-            border-radius: 10px;
-            font-weight: 900;
-            font-size: 1rem;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
-            animation: alertaEmergencia 1.5s infinite;
-        }
-
-        body.modo-emergencia .header-scanner h2 {
-            color: #fecaca;
-            text-transform: uppercase;
-            font-size: 1.5rem;
-            margin-top: 5px;
-            animation: alertaEmergencia 1.5s infinite;
-        }
-
-        body.modo-emergencia .controls {
-            border: 3px solid #ef4444 !important;
-            background: #1c0909 !important;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5), 0 0 35px rgba(239, 68, 68, 0.2) !important;
-        }
-
-        body.modo-emergencia .controls::before {
-            content: "🛡️ ESTE DISPOSITIVO ESTÁ OPERANDO EM MODO DE EVACUAÇÃO";
-            display: block;
-            background: #7f1d1d;
-            color: #fecaca;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.78rem;
-            font-weight: bold;
-            line-height: 1.3;
-        }
-
-        body.modo-emergencia .controls label {
-            color: #fca5a5;
-        }
-
-        body.modo-emergencia select,
-        body.modo-emergencia select:disabled {
-            background: #450a0a !important;
-            color: #fff !important;
-            border: 2px solid #ef4444 !important;
-            opacity: 1 !important;
-            cursor: not-allowed !important;
-            font-weight: bold;
-        }
-
-        body.modo-emergencia #reader {
-            border: 4px solid #ef4444 !important;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.7), 0 0 45px rgba(239, 68, 68, 0.25);
-        }
-
-        body.modo-emergencia #resultado {
-            background: #7f1d1d;
-            border-left: 8px solid #ef4444;
-            color: #fff;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
-        }
-
-        body.modo-emergencia #resultado.success {
-            background: #047857;
-            border-left-color: #4cd964;
-            box-shadow: 0 0 20px rgba(76, 217, 100, 0.4);
-        }
-
-        @keyframes alertaEmergencia {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.65; }
-        }
-
-        /* =========================================================
-           CELULARES
-           ========================================================= */
-
-        @media (max-width: 500px) {
-            body { padding: 12px; }
-            .header-scanner { margin-bottom: 12px; }
-            .controls { padding: 15px; }
-            body.modo-emergencia .header-scanner::before {
-                font-size: 0.9rem;
-                padding: 10px 6px;
-            }
-            body.modo-emergencia .header-scanner h2 { font-size: 1.3rem; }
-        }
+    }
     </style>
 </head>
-
 <body>
+    <div class="dashboard-container">
+        <header class="stats-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+            <div class="nav-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 320px; flex-shrink: 0;">
+                <button onclick="window.location.replace('relatorios.html')" style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 6px 10px; border-radius: 6px; color: #3b82f6; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap;">📊 RELATÓRIOS</button>
+                <button onclick="window.location.replace('mapa.html')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 6px 10px; border-radius: 6px; color: #10b981; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap;">📍 MAPA REALTIME</button>
+                <div id="btnAbandono" class="btn-emergencia" style="font-size: 0.7rem; white-space: nowrap;">🚨 ABANDONO</div>
+                <button id="btnTurno" style="background: rgba(139, 92, 246, 0.1); border: 1px solid #8b5cf6; padding: 6px 10px; border-radius: 6px; color: #8b5cf6; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap;">☀️ TURNO: MANHÃ</button>
+            </div>
 
-    <div class="header-scanner">
-        <img src="logo.png" alt="" style="max-height: 50px; margin-bottom: 10px;">
-        <h2 id="titulo-scanner">Registrar Aluno</h2>
+            <div class="stats-group" style="display: flex; gap: 30px;">
+                <div class="stat-item">
+                    <span class="label" style="display: block; font-size: 0.7rem; color: #94a3b8;">EM TRÂNSITO</span>
+                    <span id="total-fora" class="value" style="font-size: 1.8rem; font-weight: bold; color: #fff;">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label" style="display: block; font-size: 0.7rem; color: #ef4444;">ATRASADOS</span>
+                    <span id="total-atraso" class="value" style="font-size: 1.8rem; font-weight: bold; color: #ef4444;">0</span>
+                </div>
+            </div>
+
+            <div class="clock-group">
+                <div id="relogio" style="font-family: monospace; font-size: 1.8rem; color: #3b82f6; background: rgba(15, 23, 42, 0.5); padding: 5px 15px; border-radius: 8px; border: 1px solid #334155;">00:00:00</div>
+            </div>
+        </header>
+
+        <section class="turmas-summary">
+            <div id="resumo-turmas" class="turmas-grid"></div>
+        </section>
+
+        <main class="main-content">
+            <section class="monitor-section">
+                <h2>Alunos Fora de Sala</h2>
+                <div id="grid-alunos" class="student-grid"></div>
+            </section>
+            <aside class="analytics-side">
+                <h3>Distribuição por Local</h3>
+                <canvas id="graficoLocais"></canvas>
+            </aside>
+        </main>
     </div>
 
-    <div class="controls" id="container-controls">
-        <label for="responsavel">Autorizado por:</label>
-        <select id="responsavel">
-            <option value="Professor(a)">👨‍🏫 Professor(a)</option>
-            <option value="Pedagoga">👩‍💼 Pedagoga</option>
-            <option value="Inspetoria">👮 Inspetoria</option>
-            <option value="Direção">🏛️ Direção</option>
-        </select>
-
-        <label for="localDestino">Ação / Destino:</label>
-        <select id="localDestino">
-            <optgroup label="Fluxo de Sala">
-                <option value="SALA DE AULA">🟢 ENTRADA: Sala de Aula</option>
-                <option value="DISPENSADO">🔴 SAÍDA: Dispensado (Ir embora)</option>
-            </optgroup>
-            <optgroup label="Saídas Temporárias">
-                <option value="Banheiro">🧻 Banheiro</option>
-                <option value="Bebedouro">💧 Bebedouro</option>
-                <option value="Pedagogia">📋 Pedagogia</option>
-                <option value="Pátio">🌳 Pátio</option>
-                <option value="Aula Vaga">🏫 Aula Vaga (50 min)</option>
-            </optgroup>
-        </select>
+    <div id="modalChamada" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloModal">Chamada</h3>
+                <span class="close-btn" onclick="fecharModal()">&times;</span>
+            </div>
+            <div id="corpoModal" class="lista-chamada"></div>
+        </div>
     </div>
+<script>
+    if (!sessionStorage.getItem('logado')) {
+        sessionStorage.setItem('logado', 'true');
+    }
 
-    <div id="reader"></div>
+    /* =========================================================
+       INICIALIZAÇÃO DO SUPABASE (PUBLIC ANON KEY)
+       ========================================================= */
+    const SUPABASE_URL = 'https://jrdzgddszylausmwgrxw.supabase.co&#39;;
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyZHpnZGRzenlsYXVzbXdncnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzAwNDgsImV4cCI6MjEwNzE0NjA0OH0.6a9pbuSuabu9yP5zdtlemeIQYTXIB4ArauayEi5N-BY';
 
-    <div id="resultado" class="scanning">
-        Aguardando leitura do QR Code...
-    </div>
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false }
+    });
 
-    <!-- Biblioteca QR Code -->
-    <script src="https://unpkg.com/html5-qrcode"></script&gt;
+    // Limpa canais órfãos ao carregar/sair da página
+    if (supabaseClient) {
+        supabaseClient.removeAllChannels();
+    }
 
-    <script>
-        if (sessionStorage.getItem('logado') !== 'true') {
-            window.location.replace("index.html");
+    let listaAlunosCompleta = {};
+    let movimentacoesAtuais = [];
+    let meuGrafico = null;
+
+    // --- LÓGICA DE ALTERNÂNCIA DO BOTÃO TURNO ---
+    const turnos = [
+        { label: "☀️ TURNO: MANHÃ" },
+        { label: "⛅ TURNO: TARDE" },
+        { label: "🌙 TURNO: NOITE" }
+    ];
+    let indiceTurno = 0;
+
+    document.getElementById('btnTurno').onclick = () => {
+        indiceTurno = (indiceTurno + 1) % turnos.length;
+        document.getElementById('btnTurno').innerText = turnos[indiceTurno].label;
+    };
+
+    /* =========================================================
+       CARREGAMENTO E CONFIGURAÇÃO DO REALTIME (WEBSOCKET BLINDADO)
+       ========================================================= */
+   let canalGlobal = null;
+
+    async function inicializarMonitoramento() {
+        console.log("⚡ Carregando dados iniciais e ativando Supabase Realtime...");
+        await atualizarTudo();
+        conectarRealtimeGlobal();
+        setInterval(atualizarTudo, 30000);
+    }
+
+    function conectarRealtimeGlobal() {
+        if (canalGlobal) {
+            supabaseClient.removeChannel(canalGlobal);
         }
 
-        /* =========================================================
-           CONFIGURAÇÃO DO SUPABASE CLIENT (PUBLIC ANON KEY)
-           ========================================================= */
-        const SUPABASE_URL = 'https://jrdzgddszylausmwgrxw.supabase.co&#39;;
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyZHpnZGRzenlsYXVzbXdncnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzAwNDgsImV4cCI6MjEwNzE0NjA0OH0.6a9pbuSuabu9yP5zdtlemeIQYTXIB4ArauayEi5N-BY';
+        canalGlobal = supabaseClient.channel('telao-realtime-' + Date.now());
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: { persistSession: false }
-        });
-
-        // Limpa canais órfãos ao carregar o scanner
-        if (supabaseClient) {
-            supabaseClient.removeAllChannels();
-        }
-
-        /* =========================================================
-           ESTADO GLOBAL
-           ========================================================= */
-
-        window.modoEmergenciaAtivo = false;
-        window.isProcessing = false;
-
-        /* =========================================================
-           ELEMENTOS DO DOM
-           ========================================================= */
-
-        const body = document.body;
-        const resDiv = document.getElementById('resultado');
-        const controls = document.getElementById('container-controls');
-        const selectDestino = document.getElementById('localDestino');
-        const selectResponsavel = document.getElementById('responsavel');
-        const titulo = document.getElementById('titulo-scanner');
-
-        /* =========================================================
-           ÁUDIO (Web Audio API)
-           ========================================================= */
-
-        let audioCtx = null;
-
-        function getAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            return audioCtx;
-        }
-
-        const unlockAudio = () => {
-            try {
-                const ctx = getAudioContext();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                gain.gain.value = 0.001;
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(0);
-                osc.stop(ctx.currentTime + 0.01);
-            } catch (e) {
-                console.warn("Erro ao desbloquear áudio:", e);
-            }
-        };
-
-        document.addEventListener('click', unlockAudio, { once: true });
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-
-        function playBeep(times, freq) {
-            try {
-                const ctx = getAudioContext();
-                const now = ctx.currentTime;
-
-                for (let i = 0; i < times; i++) {
-                    const startTime = now + (i * 0.2);
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, startTime);
-                   
-                    gain.gain.setValueAtTime(0.8, startTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.15);
-
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.15);
-                }
-            } catch (e) {
-                console.warn("Áudio não suportado ou bloqueado pelo navegador", e);
-            }
-        }
-
-        /* =========================================================
-           ATIVAR / DESATIVAR MODO DE EMERGÊNCIA
-           ========================================================= */
-
-        function ativarModoEmergencia() {
-            const primeiraAtivacao = !window.modoEmergenciaAtivo;
-            window.modoEmergenciaAtivo = true;
-
-            body.classList.add("modo-emergencia");
-
-            if (titulo) {
-                titulo.innerText = "🚨 MODO DE EMERGÊNCIA";
-            }
-
-            let optEmergencia = document.getElementById('opt-emergencia');
-
-            if (!optEmergencia) {
-                optEmergencia = document.createElement('option');
-                optEmergencia.id = 'opt-emergencia';
-                optEmergencia.value = 'AREA SEGURA';
-                optEmergencia.textContent = '🚨 ÁREA SEGURA (Ponto de Encontro)';
-                selectDestino.prepend(optEmergencia);
-            }
-
-            selectDestino.value = 'AREA SEGURA';
-            selectDestino.disabled = true;
-            selectResponsavel.disabled = true;
-
-            controls.style.borderColor = "#ef4444";
-            controls.style.boxShadow = "0 0 15px rgba(239, 68, 68, 0.5)";
-
-            if (!window.isProcessing) {
-                resDiv.innerHTML = "🚨 MODO EMERGÊNCIA ATIVO<br><small>🛡️ BIPAR SOMENTE PARA ÁREA SEGURA</small>";
-                resDiv.className = "error";
-            }
-
-            if (primeiraAtivacao) {
-                playBeep(4, 900);
-            }
-        }
-
-        function desativarModoEmergencia() {
-            if (!window.modoEmergenciaAtivo) return;
-
-            window.modoEmergenciaAtivo = false;
-            body.classList.remove("modo-emergencia");
-
-            if (titulo) {
-                titulo.innerText = "Registrar Aluno";
-            }
-
-            const optEmergencia = document.getElementById('opt-emergencia');
-            if (optEmergencia) {
-                optEmergencia.remove();
-            }
-
-            selectDestino.disabled = false;
-            selectResponsavel.disabled = false;
-
-            controls.style.borderColor = "transparent";
-            controls.style.boxShadow = "none";
-
-            if (!window.isProcessing) {
-                resDiv.innerHTML = "Aguardando leitura do QR Code...";
-                resDiv.className = "scanning";
-            }
-        }
-
-        /* =========================================================
-           MONITORAMENTO DO ESTADO DO SISTEMA (SUPABASE REALTIME + FETCH)
-           ========================================================= */
-
-        async function verificarEstadoEmergencia() {
-            try {
-                const resposta = await fetch('/api/scanner?estado=1', {
-                    method: 'GET',
-                    cache: 'no-store'
-                });
-
-                if (resposta.ok) {
-                    const dados = await resposta.json();
-                    if (dados.estado === "EMERGENCIA") {
-                        ativarModoEmergencia();
-                    } else {
-                        desativarModoEmergencia();
-                    }
-                }
-            } catch (erro) {
-                console.warn("⚠️ Não foi possível consultar o estado via API:", erro);
-            }
-        }
-
-        // 1. Escuta em Tempo Real pelo Supabase com auto-reconexão blindada
-        const canalScannerEstado = supabaseClient.channel('realtime-scanner-estado');
-
-        canalScannerEstado
+        canalGlobal
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, async (payload) => {
+                await carregarMovimentacoes();
+                processarDados();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'alunos' }, async (payload) => {
+                await carregarAlunos();
+                processarDados();
+            })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_sistema' }, (payload) => {
-                if (payload.new) {
-                    if (payload.new.modo === "EMERGENCIA") {
-                        ativarModoEmergencia();
-                    } else {
-                        desativarModoEmergencia();
-                    }
+                if (payload.new && payload.new.modo === "EMERGENCIA") {
+                    window.location.href = "telao_abandono.html";
                 }
             })
-            .subscribe((status, err) => {
-                console.log("📡 Status do Canal Scanner Estado:", status);
+            .subscribe((status) => {
+                console.log("📡 Status do Canal Realtime:", status);
                 if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    console.warn("⚠️ Oscilação detectada no scanner. Reconectando em 2s...");
+                    console.warn("⚠️ Reconectando com novo canal em 3s...");
                     setTimeout(() => {
-                        canalScannerEstado.subscribe();
-                    }, 2000);
+                        conectarRealtimeGlobal();
+                    }, 3000);
                 }
             });
+    }
 
-        // 2. Consulta inicial e fallback periódico (a cada 3s)
-        verificarEstadoEmergencia();
-        setInterval(verificarEstadoEmergencia, 3000);
+    async function atualizarTudo() {
+        try {
+            const { data: estadoData, error: errEstado } = await supabaseClient
+                .from('estado_sistema')
+                .select('modo')
+                .eq('id', 1)
+                .maybeSingle();
 
-        /* =========================================================
-           LEITURA DO QR CODE E ENVIO DE BIPAGEM
-           ========================================================= */
+            if (!errEstado && estadoData && estadoData.modo === "EMERGENCIA") {
+                window.location.href = "telao_abandono.html";
+                return;
+            }
 
-        function onScanSuccess(decodedText) {
-            if (window.isProcessing) return;
+            await carregarAlunos();
+            await carregarMovimentacoes();
+            processarDados();
+        } catch (err) {
+            console.error("Erro na sincronização:", err);
+        }
+    }
 
-            window.isProcessing = true;
+    async function carregarAlunos() {
+        try {
+            const { data: alunos, error } = await supabaseClient
+                .from('alunos')
+                .select('*');
 
-            const local = window.modoEmergenciaAtivo ? "AREA SEGURA" : selectDestino.value;
-            const autorizacao = window.modoEmergenciaAtivo ? "PLANO DE ABANDONO" : selectResponsavel.value;
+            if (!error && alunos) {
+                listaAlunosCompleta = {};
+                alunos.forEach(a => {
+                    const chave = a.uid || a.id;
+                    if (chave) listaAlunosCompleta[chave] = a;
+                });
+            }
+        } catch (e) {
+            console.error("Exceção carregarAlunos:", e);
+        }
+    }
 
-            resDiv.innerHTML = `⏳ Sincronizando: ${decodedText}...`;
-            resDiv.className = "scanning";
+    async function carregarMovimentacoes() {
+        try {
+            const { data: movs, error } = await supabaseClient
+                .from('movimentacoes')
+                .select('*');
 
-            fetch('/api/scanner', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    alunoTag: decodedText,
-                    localDestino: local,
-                    autorizadoPor: autorizacao,
-                    timestamp: new Date().toISOString()
-                })
-            })
-            .then(async res => {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || `Erro HTTP ${res.status}`);
-                }
-                return data;
-            })
-            .then(data => {
-                if (data.success) {
-                    const msgSucesso = (data.mensagem === "ALUNO EM ÁREA SEGURA" || local === "AREA SEGURA")
-                        ? "🛡️ ALUNO SEGURO NO PONTO DE ENCONTRO!"
-                        : "✅ REGISTRO CONFIRMADO!";
+            if (!error && movs) {
+                movimentacoesAtuais = movs;
+            }
+        } catch (e) {
+            console.error("Exceção carregarMovimentacoes:", e);
+        }
+    }
 
-                    resDiv.innerHTML = `${msgSucesso}<br><small>${data.nome || decodedText}</small>`;
-                    resDiv.className = "success";
-                    playBeep(1, 880);
-                } else {
-                    throw new Error(data.message || "Erro na API");
-                }
-            })
-            .catch(err => {
-                console.error("❌ Erro no Scanner:", err);
-                resDiv.innerHTML = `❌ ${err.message || "Falha no Registro"}`;
-                resDiv.className = "error";
-                playBeep(3, 200);
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    if (window.modoEmergenciaAtivo) {
-                        resDiv.innerHTML = "🚨 MODO EMERGÊNCIA ATIVO<br><small>🛡️ Aguardando próximo aluno...</small>";
-                        resDiv.className = "error";
-                    } else {
-                        resDiv.innerHTML = "Aguardando leitura do QR Code...";
-                        resDiv.className = "scanning";
-                    }
-                    window.isProcessing = false;
-                }, 2000);
-            });
+    /* =========================================================
+       BOTÃO DE ABANDONO (DISPARA EMERGÊNCIA)
+       ========================================================= */
+    document.getElementById('btnAbandono').onclick = async (e) => {
+        e.preventDefault();
+       
+        if (confirm("Deseja ATIVAR o Protocolo de Abandono em toda a escola?")) {
+            try {
+                const { error } = await supabaseClient
+                    .from('estado_sistema')
+                    .update({ modo: "EMERGENCIA" })
+                    .neq('id', 0);
+
+                if (error) throw error;
+                window.location.href = "telao_abandono.html";
+            } catch (error) {
+                alert("Erro ao ativar emergência: " + error.message);
+            }
+        }
+    };
+
+    /* =========================================================
+       PROCESSAMENTO E RENDERIZAÇÃO DA INTERFACE
+       ========================================================= */
+    function processarDados() {
+        renderizarResumoTurmas();
+        renderizarDashboard();
+        atualizarGrafico();
+    }
+
+    function renderizarResumoTurmas() {
+        const container = document.getElementById('resumo-turmas');
+        if (!container) return;
+
+        const todosAlunos = Object.values(listaAlunosCompleta);
+        const turmasEncontradas = [...new Set(todosAlunos.map(a => a.turma))].filter(Boolean).sort();
+
+        if (turmasEncontradas.length === 0) {
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8;">Nenhuma turma encontrada.</p>';
+            return;
         }
 
-        /* =========================================================
-           INICIALIZAÇÃO DO SCANNER DA CÂMERA
-           ========================================================= */
+        container.innerHTML = turmasEncontradas.map(turmaNome => {
+            const alunosDaTurma = todosAlunos.filter(a => a.turma === turmaNome);
+            const totalMatriculados = alunosDaTurma.length;
+           
+            const presentesNaEscola = alunosDaTurma.filter(a => {
+                const st = (a.status || '').toLowerCase();
+                return st === 'presente' || st === 'sala' || st === 'sala de aula';
+            }).length;
 
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            {
-                fps: 15,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    const minEdgePercentage = 0.7;
-                    const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-                    const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-                    return { width: qrboxSize, height: qrboxSize };
-                },
-                aspectRatio: 1.0,
-                rememberLastUsedCamera: true,
-                showTorchButtonIfSupported: true
+            const alunosFora = movimentacoesAtuais.filter(m => m.turma === turmaNome && m.status === 'em_andamento').length;
+            const emSala = Math.max(0, presentesNaEscola - alunosFora);
+            const perc = totalMatriculados > 0 ? (emSala / totalMatriculados) * 100 : 0;
+
+            return `
+                <div class="turma-stat-card">
+                    <h4>${turmaNome}</h4>
+                    <div class="stat-row">
+                        <span>Sala: <strong>${emSala}</strong></span>
+                        <span>Fora: <strong style="color:#eab308">${alunosFora}</strong></span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${perc}%"></div></div>
+                    <button class="btn-chamada" onclick="abrirChamada('${turmaNome}')">Chamada (${presentesNaEscola})</button>
+                </div>`;
+        }).join('');
+    }
+
+    function renderizarDashboard() {
+        const grid = document.getElementById('grid-alunos');
+        if (!grid) return;
+
+        const emAndamento = movimentacoesAtuais.filter(m => m.status === 'em_andamento');
+        document.getElementById('total-fora').innerText = emAndamento.length;
+       
+        const agora = new Date();
+        let totalAtrasados = 0;
+
+        grid.innerHTML = emAndamento.map(m => {
+            const dataSaida = new Date(m.data_hora_saida);
+            const diffMinutos = Math.floor((agora - dataSaida) / 60000);
+           
+            let limite = m.tempo_limite || 10;
+            if (m.local_destino && m.local_destino.toUpperCase().includes("AULA VAGA")) {
+                limite = 50;
             }
-        );
 
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
+            const isAtrasado = diffMinutos > limite;
+            if (isAtrasado) totalAtrasados++;
+
+            const tempoExcedido = diffMinutos - limite;
+
+            let textoTempo = `🕒 ${diffMinutos} min`;
+            if (isAtrasado) {
+                textoTempo += ` <span style="font-size: 0.85rem; display: block; color: #ef4444; font-weight: bold; margin-top: 4px;">(excedeu ${tempoExcedido} min)</span>`;
+            } else {
+                textoTempo += ` <span style="font-size: 0.75rem; display: block; color: #94a3b8; margin-top: 4px;">(limite: ${limite} min)</span>`;
+            }
+
+            return `
+                <div class="student-card ${isAtrasado ? 'critical' : ''}">
+                    <span class="turma-tag">${m.turma}</span>
+                    <h3>${m.nome}</h3>
+                    <p>📍 ${m.local_destino}</p>
+                    <div class="info-tempo">
+                        ${textoTempo}
+                    </div>
+                </div>`;
+        }).join('');
+       
+        document.getElementById('total-atraso').innerText = totalAtrasados;
+    }
+
+    function atualizarGrafico() {
+        const canvas = document.getElementById('graficoLocais');
+        if (!canvas) return;
+
+        const listaEmAndamento = movimentacoesAtuais.filter(m => m.status === 'em_andamento');
+        const contagem = {};
+       
+        listaEmAndamento.forEach(m => { contagem[m.local_destino] = (contagem[m.local_destino] || 0) + 1; });
+       
+        if (meuGrafico) meuGrafico.destroy();
+       
+        if (listaEmAndamento.length > 0) {
+            meuGrafico = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(contagem),
+                    datasets: [{ data: Object.values(contagem), backgroundColor: ['#3b82f6', '#22c55e', '#eab308', '#ef4444'], borderWidth: 0 }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#fff' } } } }
+            });
+        }
+    }
+
+    window.abrirChamada = function(turmaNome) {
+        const corpo = document.getElementById('corpoModal');
+        document.getElementById('tituloModal').innerText = `Chamada: ${turmaNome}`;
+        corpo.innerHTML = '';
+        Object.values(listaAlunosCompleta)
+            .filter(a => a.turma === turmaNome)
+            .sort((a, b) => a.nome.localeCompare(b.nome))
+            .forEach(a => {
+                const st = (a.status || '').toLowerCase();
+                const isPresente = (st === 'presente' || st === 'sala' || st === 'sala de aula');
+                corpo.innerHTML += `
+                    <div class="aluno-item">
+                        <span>${a.nome}</span>
+                        <span class="${isPresente ? 'status-presente' : 'status-ausente'}">
+                            ${isPresente ? '● PRESENTE' : '○ AUSENTE'}
+                        </span>
+                    </div>`;
+            });
+        document.getElementById('modalChamada').style.display = "block";
+    }
+   
+    window.fecharModal = () => document.getElementById('modalChamada').style.display = "none";
+
+    // Relógio digital no topo
+    setInterval(() => {
+        const elRelogio = document.getElementById('relogio');
+        if (elRelogio) elRelogio.innerText = new Date().toLocaleTimeString('pt-BR');
+    }, 1000);
+
+    // Inicialização
+    inicializarMonitoramento();
+</script>
 </body>
 </html>
