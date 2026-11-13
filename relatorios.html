@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon_avelino.ico" type="image/x-icon">
    
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>;
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- CLIENTE SDK SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -98,10 +98,7 @@
            INICIALIZAÇÃO DO SUPABASE
            ========================================================= */
         const SUPABASE_URL = 'https://ijwxkqyjlvoxpnwnurru.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlqd3hrcXlqbHZveHBud251cnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NzQyMDcsImV4cCI6MjEwNzU1MDIwN30.4HyS9rTl1njEOmhSLGb7G68yQoOAiE5BIZlDmTHe-as'; // Insira a sua chave anon public
-
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlqd3hrcXlqbHZveHBud251cnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NzQyMDcsImV4cCI6MjEwNzU1MDIwN30.4HyS9rTl1njEOmhSLGb7G68yQoOAiE5BIZlDmTHe-as';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: { persistSession: false }
         });
